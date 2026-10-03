@@ -25,6 +25,8 @@ import tifffile
 from rt_utils import RTStructBuilder
 from skimage.measure import label as connected_components
 
+from lungman_dicom.reduce import DEFAULT_DECIMALS, DEFAULT_TOLERANCE_MM, ReductionStats, reduce_rtstruct
+
 # Labels whose labels.dat HU was measured on the CT (the bone entries are assigned values,
 # all exactly 600.357 or 300.357, and cannot be used to check alignment).
 ALIGNMENT_LABELS: dict[str, float] = {"trachea": 10.0, "heart": 10.0, "bronchus": 10.0}
@@ -168,14 +170,28 @@ def build_rtstruct(
     return rtstruct
 
 
-def convert(lungman_dir: Path, output: Path, split_tumours: bool = True) -> dict[str, float]:
-    """Convert CD1 + SEGMENTATION into an RTSTRUCT at `output`. Returns the alignment diffs."""
+def convert(
+    lungman_dir: Path,
+    output: Path,
+    split_tumours: bool = True,
+    full: bool = False,
+    tolerance_mm: float = DEFAULT_TOLERANCE_MM,
+) -> tuple[dict[str, float], ReductionStats | None]:
+    """Convert CD1 + SEGMENTATION into an RTSTRUCT at `output`.
+
+    By default every contour is simplified to within `tolerance_mm` and written to 0.001 mm (see
+    reduce.py); `full=True` keeps every traced point at full precision.
+
+    Returns:
+        The alignment diffs, and the reduction stats (None when `full`).
+    """
     ct_dir = lungman_dir / "CD1" / "DICOM" / "ST000000" / "SE000000"
     ct = read_ct_series(ct_dir)
     infos = read_labels(lungman_dir / "SEGMENTATION" / "labels.dat")
     labels = read_label_volume(lungman_dir / "SEGMENTATION", ct)
     diffs = check_alignment(hu_volume(ct), labels, infos)
     rtstruct = build_rtstruct(ct_dir, ct, labels, infos, split_tumours)
+    stats = None if full else reduce_rtstruct(rtstruct.ds, tolerance_mm, DEFAULT_DECIMALS)
     output.parent.mkdir(parents=True, exist_ok=True)
     rtstruct.save(str(output))
-    return diffs
+    return diffs, stats

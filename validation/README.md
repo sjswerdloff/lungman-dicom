@@ -10,7 +10,8 @@ considered to be part of the ROI."
 Two readers rasterise the same RTSTRUCT onto the CT grid, and each mask is compared with the
 Lungman label volume, voxel for voxel. "Volume" is reader voxels divided by reference voxels.
 
-- **OpenTPS** (commit 78850535): its own `readDicomCT`, `readDicomStruct` and
+- **OpenTPS** is `opentps_core` (commit 78850535), used as the scriptable library it is meant to be,
+  not through the GUI: its own `readDicomCT`, `readDicomStruct` and
   `ROIContour.getBinaryMask(ct.origin, ct.gridSize, ct.spacing)` are run. It fills with PIL
   `polygon(outline=1, fill=1)`, so pixels the outline passes through count, and combines the
   contours on a plane by XOR.

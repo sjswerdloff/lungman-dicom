@@ -41,9 +41,20 @@ def _phantom() -> np.ndarray:
 
 class TestBodyMask:
     def test_fills_enclosed_space_and_nothing_outside(self) -> None:
-        body = body_mask(_phantom())
+        body = body_mask(_phantom(), [])
         assert body[:, 2:18, 2:28].all()
         assert int(body.sum()) == 4 * 16 * 26
+
+    def test_the_couch_and_the_gap_it_encloses_are_outside_the_body(self) -> None:
+        lab = _phantom()
+        couch = 12
+        lab[:, 18, :] = couch  # a full-width layer touching the block
+        lab[:, 19, 0] = couch
+        lab[:, 19, 29] = (
+            couch  # with row 18, closes an air gap along row 19 against the image edge
+        )
+        assert int(body_mask(lab, [couch]).sum()) == 4 * 16 * 26
+        assert int(body_mask(lab, []).sum()) > 4 * 16 * 26
 
 
 class TestDeriveRegions:
@@ -81,6 +92,12 @@ class TestDeriveRegions:
         assert np.nonzero(regions.lung_right)[2].max() <= regions.midline_column
         assert not (regions.lung_left & regions.lung_right).any()
 
+    def test_couch_labels_are_left_out_of_the_body(self) -> None:
+        lab = _phantom()
+        lab[:, 18, :] = 12
+        infos = [*INFOS, cv.LabelInfo(12, 204.0, "sheets_med")]
+        assert not derive_regions(lab, infos).body[:, 18, :].any()
+
     def test_left_follows_the_x_direction(self) -> None:
         flipped = derive_regions(_phantom(), INFOS, x_increases_with_column=False)
         assert np.nonzero(flipped.lung_left)[2].max() < flipped.midline_column
@@ -116,6 +133,8 @@ class TestRealData:
         assert 1500 < left < 3000 and 1500 < right < 3000
         heart = labels == value["heart"]
         assert regions.body[heart].all()
+        couch = np.isin(labels, [i.value for i in infos if i.name.startswith("sheets")])
+        assert couch.any() and not regions.body[couch].any()
         assert (
             np.nonzero(heart)[2].mean() > regions.midline_column
         )  # the heart lies to the patient's left

@@ -3,12 +3,14 @@
 The archive labels the inserts and the soft-tissue filler ("skin"), but not the lungs and not a body
 outline. Planning needs both. These are DERIVED: they follow the rules below, not a label in the data.
 
-- body: on each slice, the union of every label with its holes filled. The lung air and any other
-  unlabelled space enclosed by labelled material is inside it.
+- body: on each slice, the union of every label except the couch, with its holes filled. The lung
+  air and any other unlabelled space enclosed by phantom material is inside it. The `sheets_*`
+  labels are the CT couch (flat layers across the whole image width, behind the phantom), not the
+  phantom, and are left out.
 - lungs: the 3D-connected regions of body that are unlabelled or `bronchioles` (the vessel tree
   inside the lung air), keeping each region at least a tenth the size of the largest. Trachea,
   bronchus, tumours and every other insert are excluded. Smaller unlabelled regions (air gaps between
-  phantom parts; the largest on Lungman is 3.6% of the lung region) are not lung and are dropped.
+  phantom parts) are not lung and are dropped.
   The two lungs may or may not be connected to each other; the rule keeps both either way.
 - left and right: the lungs split at the x of the spine's centroid; the midline column itself goes
   to the right lung, so the two together are the whole lung region. Patient x increases towards the
@@ -27,6 +29,7 @@ from lungman_dicom.convert import LabelInfo, LungmanConversionError
 VESSEL_LABEL = "bronchioles"
 MIN_FRACTION_OF_LARGEST = 0.1
 SPINE_LABELS = ("spine-hard-650", "spine-soft-650")
+COUCH_PREFIX = "sheets"
 
 
 @dataclass(frozen=True)
@@ -44,10 +47,14 @@ class DerivedRegions:
         return self.lung_left | self.lung_right
 
 
-def body_mask(labels: np.ndarray) -> np.ndarray:
-    """Fill the holes of the labelled region on each slice."""
-    labelled = labels > 0
-    return np.stack([ndimage.binary_fill_holes(s) for s in labelled])
+def body_mask(labels: np.ndarray, couch_values: list[int]) -> np.ndarray:
+    """Fill the holes of the labelled region, less the couch, on each slice.
+
+    A couch-labelled voxel is never body, even where phantom material encloses it (Lungman has one).
+    """
+    couch = np.isin(labels, couch_values)
+    phantom = (labels > 0) & ~couch
+    return np.stack([ndimage.binary_fill_holes(s) for s in phantom]) & ~couch
 
 
 def derive_regions(
@@ -70,7 +77,9 @@ def derive_regions(
         raise LungmanConversionError(
             f"labels needed to derive the lungs are missing: {', '.join(missing)}"
         )
-    body = body_mask(labels)
+    body = body_mask(
+        labels, [i.value for i in infos if i.name.startswith(COUCH_PREFIX)]
+    )
     candidate = body & np.isin(labels, [0, value[VESSEL_LABEL]])
     components, count = ndimage.label(candidate)
     if count == 0:

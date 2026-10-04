@@ -15,8 +15,9 @@ Lungman label volume, voxel for voxel. "Volume" is reader voxels divided by refe
   `ROIContour.getBinaryMask(ct.origin, ct.gridSize, ct.spacing)` are run. It fills with PIL
   `polygon(outline=1, fill=1)`, so pixels the outline passes through count, and combines the
   contours on a plane by XOR.
-- **Strict** is the rule in dicompyler-core 0.5.7 `dvhcalc.get_contour_mask`, which OnkoDICOM's DVH
-  uses: `matplotlib.path.Path(contour).contains_points(pixel centres)`, XOR per plane. The rule is
+- **Strict** is the rule in dicompyler-core's `dvhcalc.get_contour_mask`, which OnkoDICOM's DVH
+  uses (read at GitHub commit 0d5729d7, the build OnkoDICOM locks; it reports itself as 0.5.7, and
+  PyPI's latest release is 0.5.6): `matplotlib.path.Path(contour).contains_points(pixel centres)`, XOR per plane. The rule is
   reproduced in `compare_readers.py` over each contour's bounding box, not called, because the
   original tests the whole grid for every contour. matplotlib 3.10.8.
 
@@ -97,6 +98,11 @@ extent and then resamples onto the CT, so its masks shift: Dice drops although v
 ## Limits
 
 - One phantom, one CT grid (0.625 mm pixels), one machine.
+- The strict figures are for rasterising on the CT grid. A DVH computed on a coarser dose grid loses a
+  different fraction of each structure.
 - The strict column reproduces dicompyler-core's rule; it is not a run of dicompyler-core or OnkoDICOM.
+  clement-7074f29f ran dicompyler-core 0.5.6's own `get_contour_mask` over the full CT grid for
+  `tumours_100HU_1`, `tumours_630HU_3` and `sternum-hard-550` and got the same voxel counts (0.780,
+  0.662 and 0.235 of the reference; review of lungman-dicom PR #5).
 - Pixel centres lying exactly on the path are the deciding case, so the strict result may differ
   between matplotlib versions (3.10.8 here).

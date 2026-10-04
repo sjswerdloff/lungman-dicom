@@ -72,6 +72,18 @@ class TestSimplifyContour:
         stair = _staircase()
         assert np.array_equal(simplify_contour(stair, 0.0), stair)
 
+    def test_non_planar_contour_refused_rather_than_flattened(self) -> None:
+        stair = _staircase()
+        stair[5, 2] += 0.5
+        with pytest.raises(ValueError, match="not axial-planar"):
+            simplify_contour(stair, 0.5)
+
+    def test_non_planar_refused_through_reduce_rtstruct(self) -> None:
+        stair = _staircase()
+        stair[-1, 2] += 0.01
+        with pytest.raises(ValueError, match="not axial-planar"):
+            reduce_rtstruct(_rtstruct([stair]), 0.5, 3)
+
     def test_negative_tolerance_refused(self) -> None:
         with pytest.raises(ValueError, match="non-negative"):
             simplify_contour(_staircase(), -0.1)

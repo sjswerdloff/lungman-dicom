@@ -21,6 +21,7 @@ from skimage.measure import approximate_polygon
 
 DEFAULT_TOLERANCE_MM = 0.35  # about half a 0.625 mm voxel; below ~0.22 mm a pixel staircase is not reduced at all
 DEFAULT_DECIMALS = 3
+PLANAR_Z_TOLERANCE_MM = 1e-6  # rt-utils writes one z per contour exactly; anything more is a real tilt
 
 
 @dataclass(frozen=True)
@@ -37,9 +38,16 @@ def simplify_contour(points: np.ndarray, tolerance_mm: float) -> np.ndarray:
 
     Contours of fewer than 4 points are returned unchanged: there is nothing to simplify, and a single-
     pixel structure must not collapse.
+
+    Raises:
+        ValueError: if `tolerance_mm` is negative, or the contour's points do not share one z (the
+            simplified outline is written at the first point's z, so a non-planar contour would be
+            flattened silently).
     """
     if tolerance_mm < 0:
         raise ValueError("tolerance_mm must be non-negative")
+    if len(points) and np.ptp(points[:, 2]) > PLANAR_Z_TOLERANCE_MM:
+        raise ValueError(f"contour is not axial-planar: z spans {np.ptp(points[:, 2]):.6g} mm")
     if len(points) < 4 or tolerance_mm == 0:
         return points
     closed = np.vstack([points[:, :2], points[:1, :2]])  # approximate_polygon treats first == last as closed

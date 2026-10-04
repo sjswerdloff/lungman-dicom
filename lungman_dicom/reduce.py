@@ -5,6 +5,10 @@ sloped or curved edge is a staircase in which every one-pixel step is a corner, 
 Ramer-Douglas-Peucker (scikit-image `approximate_polygon`) removes them while keeping every original
 point within `tolerance_mm` of the simplified outline. Coordinates are then written to `decimals` places:
 0.001 mm is a micron, far below anything dosimetric.
+
+Each contour's optional (Type 3) ContourImageSequence is also dropped: it names the CT slice the contour
+lies on, which its z already says, and it was about a quarter of the file. The Structure Set's own
+series-level reference to every CT image is kept.
 """
 
 from __future__ import annotations
@@ -54,7 +58,8 @@ def _format(value: float, decimals: int) -> str:
 
 def reduce_rtstruct(ds: pydicom.Dataset, tolerance_mm: float = DEFAULT_TOLERANCE_MM,
                     decimals: int = DEFAULT_DECIMALS) -> ReductionStats:
-    """Simplify every contour in place and write its coordinates to `decimals` places.
+    """Simplify every contour in place, write its coordinates to `decimals` places, and drop its
+    ContourImageSequence.
 
     Returns:
         Contour and point counts before and after.
@@ -68,6 +73,8 @@ def reduce_rtstruct(ds: pydicom.Dataset, tolerance_mm: float = DEFAULT_TOLERANCE
             reduced = simplify_contour(points, tolerance_mm)
             contour.ContourData = [_format(v, decimals) for v in reduced.ravel()]
             contour.NumberOfContourPoints = len(reduced)
+            if "ContourImageSequence" in contour:
+                del contour.ContourImageSequence
             contours += 1
             before += len(points)
             after += len(reduced)

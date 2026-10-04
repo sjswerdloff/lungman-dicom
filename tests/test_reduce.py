@@ -86,9 +86,15 @@ def _rtstruct(contours: list[np.ndarray]) -> Dataset:
         c.ContourGeometricType = "CLOSED_PLANAR"
         c.NumberOfContourPoints = len(pts)
         c.ContourData = [float(v) for v in pts.ravel()]
+        image = Dataset()
+        image.ReferencedSOPInstanceUID = "1.2.3.4"
+        c.ContourImageSequence = Sequence([image])
         roi.ContourSequence.append(c)
     ds = Dataset()
     ds.ROIContourSequence = Sequence([roi])
+    series = Dataset()
+    series.ContourImageSequence = Sequence([image])
+    ds.RTReferencedSeriesSequence = Sequence([series])  # stands in for the series-level reference
     return ds
 
 
@@ -115,3 +121,9 @@ class TestReduceRtstruct:
     def test_out_of_range_decimals_refused(self, decimals: int) -> None:
         with pytest.raises(ValueError, match="decimals"):
             reduce_rtstruct(_rtstruct([_staircase()]), 0.1, decimals)
+
+    def test_drops_per_contour_image_references_and_keeps_the_series_level_one(self) -> None:
+        ds = _rtstruct([_staircase(), _staircase(5)])
+        reduce_rtstruct(ds, 0.5, 3)
+        assert all("ContourImageSequence" not in c for c in ds.ROIContourSequence[0].ContourSequence)
+        assert len(ds.RTReferencedSeriesSequence[0].ContourImageSequence) == 1

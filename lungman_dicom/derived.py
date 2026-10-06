@@ -44,7 +44,8 @@ class DerivedRegions:
     @property
     def lungs(self) -> np.ndarray:
         """Both lungs."""
-        return self.lung_left | self.lung_right
+        both: np.ndarray = self.lung_left | self.lung_right
+        return both
 
 
 def body_mask(labels: np.ndarray, couch_values: list[int]) -> np.ndarray:
@@ -57,9 +58,7 @@ def body_mask(labels: np.ndarray, couch_values: list[int]) -> np.ndarray:
     return np.stack([ndimage.binary_fill_holes(s) for s in phantom]) & ~couch
 
 
-def derive_regions(
-    labels: np.ndarray, infos: list[LabelInfo], x_increases_with_column: bool = True
-) -> DerivedRegions:
+def derive_regions(labels: np.ndarray, infos: list[LabelInfo], x_increases_with_column: bool = True) -> DerivedRegions:
     """Derive the body outline and the two lungs from the label volume.
 
     Args:
@@ -74,28 +73,20 @@ def derive_regions(
     value = {i.name: i.value for i in infos}
     missing = [n for n in (VESSEL_LABEL, *SPINE_LABELS) if n not in value]
     if missing:
-        raise LungmanConversionError(
-            f"labels needed to derive the lungs are missing: {', '.join(missing)}"
-        )
-    body = body_mask(
-        labels, [i.value for i in infos if i.name.startswith(COUCH_PREFIX)]
-    )
+        raise LungmanConversionError(f"labels needed to derive the lungs are missing: {', '.join(missing)}")
+    body = body_mask(labels, [i.value for i in infos if i.name.startswith(COUCH_PREFIX)])
     candidate = body & np.isin(labels, [0, value[VESSEL_LABEL]])
     components, count = ndimage.label(candidate)
     if count == 0:
-        raise LungmanConversionError(
-            "no unlabelled region inside the body: cannot derive the lungs"
-        )
+        raise LungmanConversionError("no unlabelled region inside the body: cannot derive the lungs")
     sizes = np.bincount(components.ravel())[1:]
     kept = np.nonzero(sizes >= MIN_FRACTION_OF_LARGEST * sizes.max())[0] + 1
     lungs = np.isin(components, kept)
 
     spine_columns = np.nonzero(np.isin(labels, [value[n] for n in SPINE_LABELS]))[2]
     if spine_columns.size == 0:
-        raise LungmanConversionError(
-            "the spine labels are empty: cannot place the midline"
-        )
-    midline = int(round(float(spine_columns.mean())))
+        raise LungmanConversionError("the spine labels are empty: cannot place the midline")
+    midline = round(float(spine_columns.mean()))
     left_side = np.zeros(labels.shape, dtype=bool)
     if x_increases_with_column:
         left_side[:, :, midline + 1 :] = True

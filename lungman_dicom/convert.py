@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pydicom
 import tifffile
-from rt_utils import RTStructBuilder
+from rt_utils import RTStruct, RTStructBuilder
 from skimage.measure import label as connected_components
 
 from lungman_dicom.reduce import DEFAULT_DECIMALS, DEFAULT_TOLERANCE_MM, ReductionStats, reduce_rtstruct
@@ -71,7 +71,7 @@ def read_ct_series(ct_dir: Path) -> list[pydicom.Dataset]:
             not uniform.
     """
     files = sorted(glob.glob(str(ct_dir / "*")))
-    datasets = [pydicom.dcmread(f) for f in files if Path(f).is_file()]
+    datasets: list[pydicom.Dataset] = [pydicom.dcmread(f) for f in files if Path(f).is_file()]
     datasets = [d for d in datasets if getattr(d, "Modality", None) == "CT"]
     if not datasets:
         raise LungmanConversionError(f"no CT images in {ct_dir}")
@@ -105,9 +105,7 @@ def read_label_volume(seg_dir: Path, ct: list[pydicom.Dataset]) -> np.ndarray:
 
 def hu_volume(ct: list[pydicom.Dataset]) -> np.ndarray:
     """Return the CT in HU, (slices, rows, cols), instance order."""
-    return np.stack(
-        [d.pixel_array.astype(np.float32) * float(d.RescaleSlope) + float(d.RescaleIntercept) for d in ct]
-    )
+    return np.stack([d.pixel_array.astype(np.float32) * float(d.RescaleSlope) + float(d.RescaleIntercept) for d in ct])
 
 
 def check_alignment(hu: np.ndarray, labels: np.ndarray, infos: list[LabelInfo]) -> dict[str, float]:
@@ -143,7 +141,7 @@ def build_rtstruct(
     labels: np.ndarray,
     infos: list[LabelInfo],
     split_tumours: bool = True,
-):
+) -> RTStruct:
     """Build an RTSTRUCT with one ROI per label and, optionally, one per tumour component.
 
     rt-utils takes a (rows, cols, slices) mask ordered like ITS OWN sorted series, so each

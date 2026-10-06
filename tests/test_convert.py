@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import ClassVar
 
 import numpy as np
-import pydicom
 import pytest
 from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import CTImageStorage, ExplicitVRLittleEndian, generate_uid
@@ -60,7 +60,7 @@ class TestReadCtSeries:
         assert [int(d.InstanceNumber) for d in ct] == [1, 2, 3]
 
     def test_refuses_a_gap_in_instance_numbers(self, tmp_path: Path) -> None:
-        with pytest.raises(cv.LungmanConversionError, match="1..N"):
+        with pytest.raises(cv.LungmanConversionError, match=r"1\.\.N"):
             cv.read_ct_series(_series(tmp_path, [(1, -10.0), (3, -11.4)]))
 
     def test_refuses_non_uniform_spacing(self, tmp_path: Path) -> None:
@@ -106,7 +106,11 @@ class TestReadLabels:
 
 
 class TestCheckAlignment:
-    INFOS = [cv.LabelInfo(3, -915.5, "trachea"), cv.LabelInfo(6, 28.3, "heart"), cv.LabelInfo(2, -25.9, "bronchus")]
+    INFOS: ClassVar[list[cv.LabelInfo]] = [
+        cv.LabelInfo(3, -915.5, "trachea"),
+        cv.LabelInfo(6, 28.3, "heart"),
+        cv.LabelInfo(2, -25.9, "bronchus"),
+    ]
 
     def _volumes(self) -> tuple[np.ndarray, np.ndarray]:
         labels = np.zeros((2, 4, 4), dtype=np.int16)

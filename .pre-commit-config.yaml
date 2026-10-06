@@ -1,0 +1,29 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (strict, project venv, CI scope)
+        entry: uv run --quiet --frozen mypy
+        language: system
+        types: [python]
+        pass_filenames: false

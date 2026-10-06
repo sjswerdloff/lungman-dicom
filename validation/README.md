@@ -102,7 +102,8 @@ extent and then resamples onto the CT, so its masks shift: Dice drops although v
   different fraction of each structure.
 - The strict column reproduces dicompyler-core's rule; it is not a run of dicompyler-core or OnkoDICOM.
   clement-7074f29f ran dicompyler-core 0.5.6's own `get_contour_mask` over the full CT grid for
-  `tumours_100HU_1`, `tumours_630HU_3` and `sternum-hard-550` and got the same voxel counts (0.780,
-  0.662 and 0.235 of the reference; review of lungman-dicom PR #5).
+  `tumours_100HU_1`, `tumours_630HU_3` and `sternum-hard-550`, at commit f68aba0, and got the same
+  volume fractions to three decimals (0.780, 0.662 and 0.235 of the reference; review of lungman-dicom
+  PR #5). The comparison was of fractions, not of voxel counts.
 - Pixel centres lying exactly on the path are the deciding case, so the strict result may differ
   between matplotlib versions (3.10.8 here).

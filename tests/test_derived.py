@@ -50,9 +50,7 @@ class TestBodyMask:
         couch = 12
         lab[:, 18, :] = couch  # a full-width layer touching the block
         lab[:, 19, 0] = couch
-        lab[:, 19, 29] = (
-            couch  # with row 18, closes an air gap along row 19 against the image edge
-        )
+        lab[:, 19, 29] = couch  # with row 18, closes an air gap along row 19 against the image edge
         assert int(body_mask(lab, [couch]).sum()) == 4 * 16 * 26
         assert int(body_mask(lab, []).sum()) > 4 * 16 * 26
 
@@ -69,14 +67,10 @@ class TestDeriveRegions:
     ) -> None:
         regions = derive_regions(_phantom(), INFOS)
         assert not regions.lungs[2, 16, 14]
-        assert (
-            int(regions.lung_right.sum()) == 4 * 10 * 7 - 1
-        )  # the right cavity less its tumour voxel
+        assert int(regions.lung_right.sum()) == 4 * 10 * 7 - 1  # the right cavity less its tumour voxel
 
     @pytest.mark.parametrize(("extra", "kept"), [(3, False), (4, True)])
-    def test_a_region_is_kept_from_a_tenth_of_the_largest(
-        self, extra: int, kept: bool
-    ) -> None:
+    def test_a_region_is_kept_from_a_tenth_of_the_largest(self, extra: int, kept: bool) -> None:
         lab = _phantom()
         lab[:, 5:15, 5:12] = SKIN  # one cavity of 280 voxels remains, so a tenth is 28
         lab[0, 16, 3:27] = 0  # 24 voxels, enclosed by soft tissue
@@ -135,6 +129,4 @@ class TestRealData:
         assert regions.body[heart].all()
         couch = np.isin(labels, [i.value for i in infos if i.name.startswith("sheets")])
         assert couch.any() and not regions.body[couch].any()
-        assert (
-            np.nonzero(heart)[2].mean() > regions.midline_column
-        )  # the heart lies to the patient's left
+        assert np.nonzero(heart)[2].mean() > regions.midline_column  # the heart lies to the patient's left

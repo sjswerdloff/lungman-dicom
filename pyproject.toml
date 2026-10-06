@@ -8,16 +8,40 @@ dependencies = [
     "rt-utils>=1.2.7",
     "scikit-image>=0.26.0",
     "scipy>=1.18.1",
-    "simpleitk>=2.5.6",
     "tifffile>=2026.9.20",
-    "totalsegmentator>=2.18.0",
 ]
 
 [dependency-groups]
+autoseg = [
+    "simpleitk>=2.5.6",
+    "totalsegmentator>=2.18.0",
+]
 dev = [
+    "mypy>=2.4.0",
+    "pre-commit>=4.6.2",
     "pytest>=9.1.1",
+    "ruff>=0.16.10",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 127
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["lungman_dicom"]
+# scikit-image ships a py.typed marker but leaves these functions unannotated.
+untyped_calls_exclude = ["skimage"]
+
+# Libraries without type information.
+[[tool.mypy.overrides]]
+module = ["rt_utils.*", "scipy.*", "tifffile.*", "stl.*"]
+ignore_missing_imports = true

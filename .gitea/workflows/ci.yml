@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  # Not filtered by base branch, so a stacked pull request still gets a run.
+  pull_request:
+  # The merge result on main, which a green pull-request head does not show.
+  push:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      # Pinned to the commit sha: a tag is mutable.
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0 # the merge below cannot run in a shallow clone
+
+      # Test the merge result, not only the branch. A conflict fails the run.
+      - name: Merge the base branch
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.base_ref }}"
+          echo "merging origin/${{ github.base_ref }} at $(git rev-parse --short FETCH_HEAD) into ${{ github.sha }}"
+          git merge --no-commit --no-ff FETCH_HEAD
+
+      - name: Install uv
+        run: |
+          command -v uv > /dev/null 2>&1 || export PATH="/opt/homebrew/bin:$PATH"
+          command -v uv > /dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv --version
+
+      # --frozen: the lock file is what gets tested. The autoseg group (TotalSegmentator, torch) is not installed.
+      - name: Install dependencies
+        run: uv sync --dev --frozen
+
+      - name: Ruff check
+        run: uv run --frozen ruff check lungman_dicom tests validation
+
+      - name: Ruff format check
+        run: uv run --frozen ruff format --check lungman_dicom tests validation
+
+      - name: Mypy
+        run: uv run --frozen mypy
+
+      # The real-data tests skip unless the Lungman archive is at ~/Downloads/lungman_data on the runner.
+      # -rs prints each skip with its reason, so a skipped real-data check is visible in the log.
+      - name: Pytest
+        run: uv run --frozen pytest --tb=short -rs

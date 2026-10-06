@@ -21,9 +21,7 @@ labels = cv.read_label_volume(LUNGMAN / "SEGMENTATION", ct)
 z = np.array([float(d.ImagePositionPatient[2]) for d in ct])
 np.savez_compressed(out / "ref.npz", labels=labels.astype(np.uint8), z=z)
 meta = {
-    "rois": [
-        {"name": i.name, "value": i.value} for i in infos if (labels == i.value).any()
-    ],
+    "rois": [{"name": i.name, "value": i.value} for i in infos if (labels == i.value).any()],
     "tumours": list(cv.TUMOUR_LABELS),
     "ct_files": [str(p) for p in sorted(ct_dir.iterdir()) if p.is_file()],
 }

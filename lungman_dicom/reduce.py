@@ -64,8 +64,9 @@ def _format(value: float, decimals: int) -> str:
     return "0" if float(text) == 0 else text.rstrip("0").rstrip(".")
 
 
-def reduce_rtstruct(ds: pydicom.Dataset, tolerance_mm: float = DEFAULT_TOLERANCE_MM,
-                    decimals: int = DEFAULT_DECIMALS) -> ReductionStats:
+def reduce_rtstruct(
+    ds: pydicom.Dataset, tolerance_mm: float = DEFAULT_TOLERANCE_MM, decimals: int = DEFAULT_DECIMALS
+) -> ReductionStats:
     """Simplify every contour in place, write its coordinates to `decimals` places, and drop its
     ContourImageSequence.
 

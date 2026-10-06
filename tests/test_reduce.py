@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
+
 import numpy as np
 import pytest
 from pydicom.dataset import Dataset
@@ -27,7 +29,7 @@ def _max_deviation(original: np.ndarray, reduced: np.ndarray) -> float:
     worst = 0.0
     for p in original[:, :2]:
         best = np.inf
-        for a, b in zip(segs[:-1], segs[1:]):
+        for a, b in pairwise(segs):
             ab = b - a
             t = 0.0 if not ab.any() else np.clip(np.dot(p - a, ab) / np.dot(ab, ab), 0, 1)
             best = min(best, float(np.linalg.norm(p - (a + t * ab))))
@@ -49,8 +51,12 @@ class TestSimplifyContour:
 
     def test_square_keeps_its_four_corners(self) -> None:
         side = np.linspace(0, 10, 17)
-        sq = np.array([(x, 0) for x in side[:-1]] + [(10, y) for y in side[:-1]]
-                      + [(x, 10) for x in side[::-1][:-1]] + [(0, y) for y in side[::-1][:-1]])
+        sq = np.array(
+            [(x, 0) for x in side[:-1]]
+            + [(10, y) for y in side[:-1]]
+            + [(x, 10) for x in side[::-1][:-1]]
+            + [(0, y) for y in side[::-1][:-1]]
+        )
         sq = np.column_stack([sq, np.full(len(sq), Z)])
         reduced = simplify_contour(sq, 0.1)
         assert len(reduced) == 4

@@ -18,9 +18,8 @@ from pathlib import Path
 import numpy as np
 import pydicom
 from matplotlib.path import Path as MplPath
-from skimage.measure import label as connected_components
-
 from opentps.core.io.dicomIO import readDicomCT, readDicomStruct
+from skimage.measure import label as connected_components
 
 work = Path(sys.argv[1])
 variants = sys.argv[2:]
@@ -33,7 +32,7 @@ ox, oy, oz = (float(v) for v in ct.origin)
 sx, sy, sz = (float(v) for v in ct.spacing)
 nx, ny, nz = (int(v) for v in ct.gridSize)
 # reference slice for each OpenTPS z index
-k_of = {int(round((z - oz) / sz)): s for s, z in enumerate(zs)}
+k_of = {round(float((z - oz) / sz)): s for s, z in enumerate(zs)}
 assert sorted(k_of) == list(range(nz)), "CT z grid does not match the label slices"
 order = np.array([k_of[k] for k in range(nz)])
 
@@ -56,12 +55,10 @@ for roi in meta["rois"]:
 
 def strict_mask(ds: pydicom.Dataset, roi_number: int) -> np.ndarray:
     mask = np.zeros((nx, ny, nz), dtype=bool)
-    roi = next(
-        r for r in ds.ROIContourSequence if int(r.ReferencedROINumber) == roi_number
-    )
+    roi = next(r for r in ds.ROIContourSequence if int(r.ReferencedROINumber) == roi_number)
     for c in getattr(roi, "ContourSequence", []):
         p = np.asarray(c.ContourData, dtype=float).reshape(-1, 3)
-        k = int(round((p[0, 2] - oz) / sz))
+        k = round(float((p[0, 2] - oz) / sz))
         i0 = max(int(np.floor((p[:, 0].min() - ox) / sx)) - 1, 0)
         i1 = min(int(np.ceil((p[:, 0].max() - ox) / sx)) + 2, nx)
         j0 = max(int(np.floor((p[:, 1].min() - oy) / sy)) - 1, 0)
@@ -83,17 +80,11 @@ for path in variants:
     struct = readDicomStruct(path)
     numbers = {r.ROIName: int(r.ROINumber) for r in ds.StructureSetROISequence}
     print(f"=== {Path(path).name}")
-    print(
-        f"{'ROI':22s} {'ref':>9s} | {'OpenTPS dice':>12s} {'vol':>6s} | {'strict dice':>11s} {'vol':>6s}"
-    )
+    print(f"{'ROI':22s} {'ref':>9s} | {'OpenTPS dice':>12s} {'vol':>6s} | {'strict dice':>11s} {'vol':>6s}")
     t = time.time()
     for name, m in refs.items():
         r = ref_xyz(m)
-        otps = (
-            struct.getContourByName(name)
-            .getBinaryMask(ct.origin, ct.gridSize, ct.spacing)
-            .imageArray.astype(bool)
-        )
+        otps = struct.getContourByName(name).getBinaryMask(ct.origin, ct.gridSize, ct.spacing).imageArray.astype(bool)
         st = strict_mask(ds, numbers[name])
         print(
             f"{name:22s} {int(r.sum()):9d} | {dice(otps, r):12.4f} {otps.sum() / r.sum():6.3f} |"

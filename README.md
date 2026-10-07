@@ -34,7 +34,7 @@ The output has one ROI per label in `labels.dat`, plus one ROI per tumour compon
     uv run pre-commit install
     uv run ruff check lungman_dicom tests validation && uv run mypy && uv run pytest
 
-CI runs the same checks. The tests that need the phantom data look for it at `~/Downloads/lungman_data` and skip when it is absent. `uv sync --group autoseg` adds TotalSegmentator and SimpleITK, which nothing in the package needs.
+CI runs the same checks. The tests that need the phantom data read its location from the environment variable `LUNGMAN_DATA`. When the variable is not set they look in `~/Downloads/lungman_data` and skip if the data is not there. When it is set and the data is missing, the test run stops with an error. `uv sync --group autoseg` adds TotalSegmentator and SimpleITK, which nothing in the package needs.
 
 ## Licence
 

@@ -95,6 +95,40 @@ OpenTPS recovers every tumour exactly. The strict reader loses the edge ring: tu
 Simplified outlines no longer sit on pixel centres. OpenTPS fits its fill grid to the outline's own
 extent and then resamples onto the CT, so its masks shift: Dice drops although volume stays close.
 
+## Results: default (0.35 mm), `lungman_dicom.verify`'s own reader
+
+Measured on 2026-10-04 with `lungman_dicom.verify.compare` on a file written with the default settings
+(55.3 MB; 3,395,780 contour points reduced to 1,907,090). This reader counts the pixels each outline passes
+through, on the CT grid. Lowest Dice first.
+
+| ROI | Label voxels | Voxels from the contours | Dice |
+|---|---|---|---|
+| spine-hard-650 | 296051 | 298914 | 0.9626 |
+| clavicle-hard-700 | 27861 | 28500 | 0.9675 |
+| bronchioles | 1272807 | 1285026 | 0.9678 |
+| scaps-hard-550 | 69844 | 70657 | 0.9695 |
+| sternum-hard-550 | 32241 | 32352 | 0.9708 |
+| sheets_low | 535605 | 534643 | 0.9747 |
+| sheets_high | 293335 | 291928 | 0.9749 |
+| clavicle-soft-700 | 107163 | 108416 | 0.9811 |
+| bronchus | 285769 | 284964 | 0.9853 |
+| spine-soft-650 | 3006429 | 3030600 | 0.9881 |
+| sternum-soft-550 | 189886 | 190916 | 0.9894 |
+| sheets_med | 1287855 | 1285695 | 0.9897 |
+| scaps-soft-550 | 1014279 | 1018552 | 0.9904 |
+| tumours_100HU_3 | 325 | 331 | 0.9909 |
+| tumours_630HU_1 | 1737 | 1725 | 0.9936 |
+| tumours_100HU_2 | 815 | 816 | 0.9945 |
+| tumours_630HU_3 | 606 | 610 | 0.9951 |
+| tumours_630HU | 3783 | 3782 | 0.9951 |
+| trachea | 165315 | 165304 | 0.9965 |
+| tumours_630HU_2 | 1440 | 1447 | 0.9969 |
+| tumours_100HU | 2932 | 2938 | 0.9973 |
+| skin | 29718041 | 29718587 | 0.9979 |
+| heart | 2703185 | 2703405 | 0.9984 |
+| diaphram | 4272090 | 4272326 | 0.9995 |
+| tumours_100HU_1 | 1792 | 1791 | 0.9997 |
+
 ## Limits
 
 - One phantom, one CT grid (0.625 mm pixels), one machine.

@@ -26,7 +26,7 @@ The output has one ROI per label in `labels.dat`, plus one ROI per tumour compon
 
 ## Verification
 
-`lungman_dicom.verify` reads the RTSTRUCT with pydicom, without rt-utils. It rasterises every contour onto the CT grid, counting the pixels each outline passes through, and compares the result with the label masks. On 2026-10-03, with every traced point kept (today's `--full`), all 19 labels and all 6 tumour components matched voxel for voxel (Dice 1.0000). With the default simplification the tumours are at Dice 0.991 or better and thin bone at 0.963 or better.
+`lungman_dicom.verify` reads the RTSTRUCT with pydicom, without rt-utils. It rasterises every contour onto the CT grid, counting the pixels each outline passes through, and compares the result with the label masks. On 2026-10-03, with every traced point kept (today's `--full`), all 19 labels and all 6 tumour components matched voxel for voxel (Dice 1.0000). With the default simplification the lowest Dice is 0.963 (hard spine and ribs) and the tumours are at 0.991 or better; the table for all 25 is in [validation/README.md](validation/README.md).
 
 ## Development
 

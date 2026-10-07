@@ -1757,7 +1757,7 @@ wheels = [
 ]
 
 [[package]]
-name = "lungman-autoseg"
+name = "lungman-dicom"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

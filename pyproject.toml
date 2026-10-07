@@ -1,6 +1,10 @@
 [project]
-name = "lungman-autoseg"
+name = "lungman-dicom"
 version = "0.1.0"
+description = "Lungman chest phantom label volume to DICOM RT Structure Set, with derived body and lung regions"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "numpy-stl>=4.0.1",

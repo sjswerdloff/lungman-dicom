@@ -47,8 +47,8 @@ jobs:
         run: uv run --frozen mypy
 
       # The real-data tests read the Lungman archive from the shared volume, which every runner host mounts.
-      # The mount is not guaranteed. When it is readable, LUNGMAN_DATA is set and a missing file stops the run.
-      # When it is not, the step says so and the real-data tests skip; -rs prints each skip with its reason.
+      # The mount is not guaranteed. When it is not readable the run fails here, so a green run always means the
+      # real-data tests ran. -rs prints any other skip with its reason.
       - name: Locate the Lungman data
         run: |
           D=/Volumes/AIDocumentCommons/KindledRT/Lungman/lungman_data
@@ -56,7 +56,8 @@ jobs:
             echo "LUNGMAN_DATA=$D" >> "$GITHUB_ENV"
             echo "real-data tests will run against $D"
           else
-            echo "::warning::Lungman data not readable at $D on $(hostname): the real-data tests will SKIP"
+            echo "::error::Lungman data not readable at $D on $(hostname): the shared volume is not mounted or is down"
+            exit 1
           fi
 
       - name: Pytest

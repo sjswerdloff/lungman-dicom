@@ -46,19 +46,27 @@ jobs:
       - name: Mypy
         run: uv run --frozen mypy
 
-      # The real-data tests read the Lungman archive from the shared volume, which every runner host mounts.
-      # The mount is not guaranteed. When it is not readable the run fails here, so a green run always means the
-      # real-data tests ran. -rs prints any other skip with its reason.
+      # The real-data tests need the Lungman archive. A copy on the runner host's own disk is tried first: the MacBook
+      # Pro has one in ~/ai/ci_fixtures, and on the Mac Studio ~/ai/AIDocumentCommons is the shared directory itself.
+      # On other hosts that path, like /Volumes/AIDocumentCommons, is the network mount. A runner that macOS has not
+      # allowed to use network volumes blocks when it opens a file there, so each try reads a few bytes with a
+      # 20-second limit. If no copy is readable the run fails here, so a
+      # green run always means the real-data tests ran. -rs prints any other skip with its reason.
       - name: Locate the Lungman data
         run: |
-          D=/Volumes/AIDocumentCommons/KindledRT/Lungman/lungman_data
-          if [ -f "$D/SEGMENTATION/labels.dat" ]; then
-            echo "LUNGMAN_DATA=$D" >> "$GITHUB_ENV"
-            echo "real-data tests will run against $D"
-          else
-            echo "::error::Lungman data not readable at $D on $(hostname): the shared volume is not mounted or is down"
-            exit 1
-          fi
+          for D in "$HOME/ai/ci_fixtures/lungman_data" \
+                   "$HOME/ai/AIDocumentCommons/KindledRT/Lungman/lungman_data" \
+                   /Volumes/AIDocumentCommons/KindledRT/Lungman/lungman_data; do
+            if perl -e 'alarm 20; exec @ARGV' head -c 16 "$D/SEGMENTATION/labels.dat" > /dev/null 2>&1 \
+               && perl -e 'alarm 20; exec @ARGV' ls "$D/CD1" > /dev/null 2>&1; then
+              echo "LUNGMAN_DATA=$D" >> "$GITHUB_ENV"
+              echo "real-data tests will run against $D"
+              exit 0
+            fi
+            echo "not readable within 20 seconds: $D"
+          done
+          echo "::error::no readable copy of the Lungman data on $(hostname)"
+          exit 1
 
       - name: Pytest
         run: uv run --frozen pytest --tb=short -rs

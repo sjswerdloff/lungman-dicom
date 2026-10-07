@@ -47,15 +47,16 @@ jobs:
         run: uv run --frozen mypy
 
       # The real-data tests need the Lungman archive. A copy on the runner host's own disk is tried first: the MacBook
-      # Pro has one in ~/ai/ci_fixtures, and on the Mac Studio ~/ai/AIDocumentCommons is the shared directory itself.
-      # On other hosts that path, like /Volumes/AIDocumentCommons, is the network mount. A runner that macOS has not
+      # Pro has one in ai/ci_fixtures, and on the Mac Studio ai/AIDocumentCommons is the shared directory itself.
+      # The paths are absolute because the Mac Studio's runner is a different user, with a different home directory.
+      # On other hosts ai/AIDocumentCommons, like /Volumes/AIDocumentCommons, is the network mount. A runner that macOS has not
       # allowed to use network volumes blocks when it opens a file there, so each try reads a few bytes with a
       # 20-second limit. If no copy is readable the run fails here, so a
       # green run always means the real-data tests ran. -rs prints any other skip with its reason.
       - name: Locate the Lungman data
         run: |
-          for D in "$HOME/ai/ci_fixtures/lungman_data" \
-                   "$HOME/ai/AIDocumentCommons/KindledRT/Lungman/lungman_data" \
+          for D in /Users/stuartswerdloff/ai/ci_fixtures/lungman_data \
+                   /Users/stuartswerdloff/ai/AIDocumentCommons/KindledRT/Lungman/lungman_data \
                    /Volumes/AIDocumentCommons/KindledRT/Lungman/lungman_data; do
             if perl -e 'alarm 20; exec @ARGV' head -c 16 "$D/SEGMENTATION/labels.dat" > /dev/null 2>&1 \
                && perl -e 'alarm 20; exec @ARGV' ls "$D/CD1" > /dev/null 2>&1; then

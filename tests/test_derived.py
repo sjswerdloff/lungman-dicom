@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pytest
+from lungman_fixture import LUNGMAN, needs_lungman
 
 from lungman_dicom import convert as cv
 from lungman_dicom.derived import body_mask, derive_regions
 
-LUNGMAN = Path.home() / "Downloads" / "lungman_data"
 SKIN, VESSEL, TUMOUR, SPINE_HARD, SPINE_SOFT = 5, 1, 15, 16, 17
 INFOS = [
     cv.LabelInfo(VESSEL, -463.0, "bronchioles"),
@@ -102,10 +100,7 @@ class TestDeriveRegions:
             derive_regions(_phantom(), [i for i in INFOS if i.name != dropped])
 
 
-@pytest.mark.skipif(
-    not (LUNGMAN / "SEGMENTATION" / "labels.dat").exists(),
-    reason="Lungman data not on this host",
-)
+@needs_lungman
 class TestRealData:
     def test_lungs_are_low_density_and_hold_no_insert_but_the_vessels(self) -> None:
         ct = cv.read_ct_series(LUNGMAN / "CD1" / "DICOM" / "ST000000" / "SE000000")

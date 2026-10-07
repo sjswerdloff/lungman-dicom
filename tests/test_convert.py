@@ -7,12 +7,11 @@ from typing import ClassVar
 
 import numpy as np
 import pytest
+from lungman_fixture import LUNGMAN, needs_lungman
 from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import CTImageStorage, ExplicitVRLittleEndian, generate_uid
 
 from lungman_dicom import convert as cv
-
-LUNGMAN = Path.home() / "Downloads" / "lungman_data"
 
 
 def _write_ct(
@@ -145,7 +144,7 @@ class TestCheckAlignment:
             cv.check_alignment(hu, labels, self.INFOS[:2])
 
 
-@pytest.mark.skipif(not (LUNGMAN / "SEGMENTATION" / "labels.dat").exists(), reason="Lungman data not on this host")
+@needs_lungman
 class TestRealData:
     """The real archive: filename order is wrong, instance order is right."""
 
